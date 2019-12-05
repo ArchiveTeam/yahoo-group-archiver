@@ -88,28 +88,28 @@ def archive_messages_metadata(yga):
     return message_ids
 
 
-def archive_message_content(yga, id, status="", skipHTML=False, skipRaw=False, noAttachments=False):
+def archive_message_content(yga, msg_id, status="", skipHTML=False, skipRaw=False, noAttachments=False):
     logger = logging.getLogger('archive_message_content')
 
     if skipRaw is False:
-        fname = "%s_raw.json" % (id,)
-        if file_keep(fname, hacky_vars['file'], " raw message id: %s" % (id,)) is False:
+        fname = "%s_raw.json" % (msg_id,)
+        if file_keep(fname, hacky_vars['file'], " raw message id: %s" % (msg_id,)) is False:
             try:
-                logger.info("Fetching  raw message id: %d %s", id, status)
-                raw_json = yga.messages(id, 'raw')
+                logger.info("Fetching  raw message id: %d %s", msg_id, status)
+                raw_json = yga.messages(msg_id, 'raw')
                 with open(fname, 'wb') as f:
                     json.dump(raw_json, codecs.getwriter('utf-8')(f), ensure_ascii=False, indent=4)
                 if 'postDate' in raw_json:
                     set_mtime(fname, int(raw_json['postDate']))
             except Exception:
-                logger.exception("Raw grab failed for message %d", id)
+                logger.exception("Raw grab failed for message %d", msg_id)
 
     if skipHTML is False:
-        fname = "%s.json" % (id,)
-        if file_keep(fname, hacky_vars['file'], " raw message id: %s" % (id,)) is False:
+        fname = "%s.json" % (msg_id,)
+        if file_keep(fname, hacky_vars['file'], " raw message id: %s" % (msg_id,)) is False:
             try:
-                logger.info("Fetching html message id: %d %s", id, status)
-                html_json = yga.messages(id)
+                logger.info("Fetching html message id: %d %s", msg_id, status)
+                html_json = yga.messages(msg_id)
                 with open(fname, 'wb') as f:
                     json.dump(html_json, codecs.getwriter('utf-8')(f), ensure_ascii=False, indent=4)
                 if 'postDate' in html_json:
@@ -117,12 +117,12 @@ def archive_message_content(yga, id, status="", skipHTML=False, skipRaw=False, n
 
                 if 'attachmentsInfo' in html_json and (
                         len(html_json['attachmentsInfo']) > 0) and noAttachments is False:
-                    with Mkchdir("%d_attachments" % id):
+                    with Mkchdir("%d_attachments" % msg_id):
                         process_single_attachment(yga, html_json['attachmentsInfo'])
                     if 'postDate' in html_json:
-                        set_mtime(sanitise_folder_name("%d_attachments" % id), int(html_json['postDate']))
+                        set_mtime(sanitise_folder_name("%d_attachments" % msg_id), int(html_json['postDate']))
             except Exception:
-                logger.exception("HTML grab failed for message %d", id)
+                logger.exception("HTML grab failed for message %d", msg_id)
 
 
 def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=False, skipRaw=False, noAttachments=False):
@@ -156,13 +156,13 @@ def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=Fals
                     len(message_subset), (message_subset or ['n/a'])[-1])
 
     n = 1
-    for id in message_subset:
+    for m_id in message_subset:
         status = "(%d of %d)" % (n, len(message_subset))
         n += 1
         try:
-            archive_message_content(yga, id, status, skipHTML, skipRaw, noAttachments)
+            archive_message_content(yga, m_id, status, skipHTML, skipRaw, noAttachments)
         except Exception:
-            logger.exception("Failed to get message id: %d", id)
+            logger.exception("Failed to get message id: %d", m_id)
             continue
 
 
@@ -451,7 +451,7 @@ def archive_files(yga, subdir=None):
             file_json = yga.files(sfpath=subdir)
         else:
             file_json = yga.files()
-    except Exception:
+    except IndexError:  # Exception:
         logger.error("Couldn't access Files functionality for this group")
         return
 

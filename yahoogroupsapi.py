@@ -10,6 +10,7 @@ import time
 
 try:
     from warcio.capture_http import capture_http
+
     warcio_failed = False
 except ImportError as e:
     warcio_failed = e
@@ -33,9 +34,11 @@ class Unrecoverable(YGAException):
     """An error that can not be resolved by retrying the request."""
     pass
 
+
 class BadSize(YGAException):
     """The filesize is between 60 and 68 bytes, which could be in error"""
     pass
+
 
 class AuthenticationError(Unrecoverable):
     pass
@@ -63,18 +66,18 @@ class YahooGroupsAPI:
     BASE_URI = "https://groups.yahoo.com/api"
 
     API_VERSIONS = {
-            'HackGroupInfo': 'v1',  # In reality, this will get the root endpoint
-            'messages': 'v1',
-            'topics': 'v1',
-            'files': 'v2',
-            'albums': 'v2',         # v3 is available, but changes where photos are located in json
-            'database': 'v1',
-            'links': 'v1',
-            'statistics': 'v1',
-            'polls': 'v1',
-            'attachments': 'v1',
-            'members': 'v1'
-            }
+        'HackGroupInfo': 'v1',  # In reality, this will get the root endpoint
+        'messages': 'v1',
+        'topics': 'v1',
+        'files': 'v2',
+        'albums': 'v2',  # v3 is available, but changes where photos are located in json
+        'database': 'v1',
+        'links': 'v1',
+        'statistics': 'v1',
+        'polls': 'v1',
+        'attachments': 'v1',
+        'members': 'v1'
+    }
 
     logger = logging.getLogger(name="YahooGroupsAPI")
 
@@ -83,8 +86,9 @@ class YahooGroupsAPI:
     http_context = dummy_contextmanager
     authenticationFailures = 0
 
-
-    def __init__(self, group, cookie_jar=None, headers={}, min_delay=0, retries=15):
+    def __init__(self, group, cookie_jar=None, headers=None, min_delay=0, retries=15):
+        if headers is None:
+            headers = {}
         self.s = requests.Session()
         self.group = group
         self.min_delay = min_delay
@@ -109,7 +113,10 @@ class YahooGroupsAPI:
            yga.messages(123, 'raw') -> yga.get_json('messages')(123, 'raw') -> calls API endpoint '/messages/123/raw'
            yga.messages(count=50) -> yga.get_json('messages')(count=50) -> calls API endpoint '/messages?count=50'
         """
-        self.API_VERSIONS[name]  # Tests that name is defined, and raises an AttributeError if not
+        try:
+            self.API_VERSIONS[name]  # Tests that name is defined, and raises an AttributeError if not
+        except AttributeError:
+            quit(1)
         return functools.partial(self.get_json, name)
 
     def backoff_time(self, attempt):
@@ -118,7 +125,7 @@ class YahooGroupsAPI:
         base = 2
         if attempt > 8:
             attempt = 8
-        return self.min_delay*base**attempt+random.uniform(0, self.min_delay*base**attempt)
+        return self.min_delay * base ** attempt + random.uniform(0, self.min_delay * base ** attempt)
 
     def download_file(self, url, f=None, **args):
         with self.http_context(self.ww):
@@ -132,19 +139,20 @@ class YahooGroupsAPI:
                         break
                     else:
                         self.logger.info("Got %d error for %s, will sleep and retry", r.status_code, url)
-                        if attempt < self.retries-1:
+                        if attempt < self.retries - 1:
                             delay = self.backoff_time(attempt)
-                            self.logger.info("Attempt %d, delaying for %.2f seconds", attempt+1, delay)
+                            self.logger.info("Attempt %d, delaying for %.2f seconds", attempt + 1, delay)
                             time.sleep(delay)
                             continue
                         self.logger.warning("Giving up, too many failed attempts at downloading %s", url)
                 elif r.status_code != 200:
                     self.logger.error("Unknown %d error for %s, giving up on this download", r.status_code, url)
                 elif len(r.content) in range(60, 69):
-                    self.logger.info("Got potentially invalid size of %d for %s, will sleep and retry", len(r.content), url)
-                    if attempt < self.retries-1:
+                    self.logger.info("Got potentially invalid size of %d for %s, will sleep and retry", len(r.content),
+                                     url)
+                    if attempt < self.retries - 1:
                         delay = self.backoff_time(attempt)
-                        self.logger.info("Attempt %d, delaying for %.2f seconds", attempt+1, delay)
+                        self.logger.info("Attempt %d, delaying for %.2f seconds", attempt + 1, delay)
                         time.sleep(delay)
                         continue
                     self.logger.warning("Giving up, too many potentially failed attempts at downloading %s", url)
@@ -173,14 +181,17 @@ class YahooGroupsAPI:
                     r = self.s.get(uri, params=opts, verify=VERIFY_HTTPS, allow_redirects=False, timeout=15)
 
                     code = r.status_code
-                    # 307 authentication errors have frequently proven to be transient, but enough in a row might indicate something like an expired cookie.
+                    # 307 authentication errors have frequently proven to be transient,
+                    # but enough in a row might indicate something like an expired cookie.
                     if code == 307:
                         self.authenticationFailures += 1
                         if (self.authenticationFailures > 50):
-                            self.logger.debug("Terminating due to %d consecutive authentication failures.", self.authenticationFailures)
+                            self.logger.debug("Terminating due to %d consecutive authentication failures.",
+                                              self.authenticationFailures)
                             raise Unrecoverable()
                         else:
-                            self.logger.debug("There have been %d consecutive authentication failures. Retrying.", self.authenticationFailures)                       
+                            self.logger.debug("There have been %d consecutive authentication failures. Retrying.",
+                                              self.authenticationFailures)
                             raise NotAuthenticated()
                     elif code == 401 or code == 403:
                         raise Unauthorized()
@@ -201,7 +212,8 @@ class YahooGroupsAPI:
 
                     if attempt < self.retries - 1:
                         delay = self.backoff_time(attempt)
-                        self.logger.info("Attempt %d/%d failed, delaying for %.2f seconds", attempt+1, self.retries, delay)
+                        self.logger.info("Attempt %d/%d failed, delaying for %.2f seconds", attempt + 1, self.retries,
+                                         delay)
                         time.sleep(delay)
                         continue
                     else:
