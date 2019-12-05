@@ -451,7 +451,7 @@ def archive_files(yga, subdir=None):
             file_json = yga.files(sfpath=subdir)
         else:
             file_json = yga.files()
-    except IndexError:  # Exception:
+    except Exception:
         logger.error("Couldn't access Files functionality for this group")
         return
 
@@ -941,6 +941,7 @@ def parse_arguments():
                     help='Output WARC file of raw network requests. [Requires warcio package installed]')
 
     p.add_argument('-v', '--verbose', action='store_true')
+    p.add_argument('-q', '--quiet', action='store_true')
     p.add_argument('--colour', '--color', action='store_true',
                    help='Colour log output to terminal [Requires coloredlogs package installed]')
     p.add_argument('--delay', type=float, default=0.2, help='Minimum delay between requests (default 0.2s)')
@@ -959,7 +960,12 @@ def main():
     log_format = {'fmt': '%(asctime)s %(levelname)s %(name)s %(message)s', 'datefmt': '%Y-%m-%d %H:%M:%S.%f %Z'}
     log_formatter = CustomFormatter(**log_format)
 
-    log_level = logging.DEBUG if args.verbose else logging.INFO
+    if args.verbose:
+        log_level = logging.DEBUG
+    elif args.quiet:
+        log_level = logging.ERROR
+    else:
+        log_level = logging.INFO
     if args.colour:
         try:
             import coloredlogs
@@ -994,6 +1000,7 @@ def main():
 
         if args.warc:
             try:
+
                 from warcio import WARCWriter
                 fhwarc = open('data.warc.gz', 'ab')
                 warc_writer = WARCWriter(fhwarc)
@@ -1003,7 +1010,8 @@ def main():
             except ImportError:
                 logging.error('WARC output requires the warcio package to be installed.')
                 exit(1)
-
+        if args.overwrite:
+            hacky_vars['file'] = True
         if args.email:
             with Mkchdir('email'):
                 archive_email(yga, message_subset=args.ids, start=args.start, stop=args.stop,
@@ -1041,8 +1049,6 @@ def main():
         if args.calendar:
             with Mkchdir('calendar'):
                 archive_calendar(yga)
-        if args.overwrite:
-            hacky_vars['file'] = True
         if args.warc:
             fhwarc.close()
 

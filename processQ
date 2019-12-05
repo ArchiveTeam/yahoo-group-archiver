@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+use warnings;
+use strict;
+use autodie;
+
+my $cmd = "./yahoo.py -cf cookie.txt -f -i -d -l -p -a -m";
+
+while(my $group_name = <>) {
+  chomp $group_name;
+  if (-e 'STOP') {
+    die "STOP file found, ABORT, not running $group_name";
+  }
+
+
+  if (-e "$group_name") {
+    print "$group_name found, Skipping\n";
+  }
+  else {
+    print "Running $cmd $group_name\n";
+    sleep 1;
+    system "$cmd $group_name";
+  }
+}
