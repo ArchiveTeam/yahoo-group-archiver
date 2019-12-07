@@ -1,39 +1,38 @@
 # encoding=utf8
-import datetime
+# import datetime
 from distutils.version import StrictVersion
 import hashlib
 import os.path
-import random
+import argparse
 from seesaw.config import realize, NumberConfigValue
 from seesaw.externalprocess import ExternalProcess
 from seesaw.item import ItemInterpolation, ItemValue
 from seesaw.task import SimpleTask, LimitConcurrent
 from seesaw.tracker import GetItemFromTracker, PrepareStatsForTracker, \
-                           UploadWithTracker, SendDoneToTracker
+    UploadWithTracker, SendDoneToTracker
 import shutil
 import socket
-import subprocess
+# import subprocess
 import sys
 import time
-import string
+# import string
 
 from tornado import httpclient
 
 import seesaw
-#from seesaw.externalprocess import WgetDownload
+# from seesaw.externalprocess import WgetDownload
 from seesaw.pipeline import Pipeline
 from seesaw.project import Project
 from seesaw.util import find_executable
 
 # TODO
 import json
-import warcio
-import requests
+# import warcio
+# import requests
 
 # check the seesaw version
 if StrictVersion(seesaw.__version__) < StrictVersion('0.10.3'):
     raise Exception('This pipeline needs seesaw version 0.10.3 or higher.')
-
 
 ###########################################################################
 # Find a useful Wget+Lua executable.
@@ -44,10 +43,12 @@ if StrictVersion(seesaw.__version__) < StrictVersion('0.10.3'):
 # TODO
 PYTHON = find_executable(
     'Python3',
-    [   'Python 3.8', 
-        'Python 3.7', 
-        'Python 3.6', 
-        'Python 3.5'   ],
+    [
+        'Python 3.8',
+        'Python 3.7',
+        'Python 3.6',
+        'Python 3.5'
+    ],
     [
         '/usr/bin/python3',
         '/usr/local/bin/python3',
@@ -58,7 +59,6 @@ PYTHON = find_executable(
 if not PYTHON:
     raise Exception('No usable Python 3 found.')
 
-
 ###########################################################################
 # The version number of this pipeline definition.
 #
@@ -68,7 +68,7 @@ VERSION = '20191206.03'
 USER_AGENT = 'ArchiveTeam'
 TRACKER_ID = 'yahoo-groups-api'
 # TRACKER_HOST = 'tracker.archiveteam.org'  #prod-env
-TRACKER_HOST = 'tracker-test.ddns.net'  #dev-env
+TRACKER_HOST = 'tracker-test.ddns.net'  # dev-env
 
 
 ###########################################################################
@@ -149,10 +149,10 @@ class PrepareDirectories(SimpleTask):
 
         item['item_dir'] = dirname
         item['start_time'] = start_time
-        item['warc_file_base'] = '%s-%s-%s-%s'    % (self.warc_prefix, escaped_item_name[:50],VERSION,start_time)
+        item['warc_file_base'] = '%s-%s-%s-%s' % (self.warc_prefix, escaped_item_name[:50], VERSION, start_time)
 
-        #open('%(item_dir)s/%(warc_file_base)s.warc.gz' % item, 'w').close()
-        #open('%(item_dir)s/%(warc_file_base)s.defer-urls.txt' % item, 'w').close()
+        # open('%(item_dir)s/%(warc_file_base)s.warc.gz' % item, 'w').close()
+        # open('%(item_dir)s/%(warc_file_base)s.defer-urls.txt' % item, 'w').close()
 
 
 class MoveFiles(SimpleTask):
@@ -174,8 +174,11 @@ class MoveFiles(SimpleTask):
                   '%(data_dir)s/%(warc_file_base)s.log' % item)
 
         shutil.rmtree('%(item_dir)s' % item)
-        item['files']=[ ItemInterpolation('%(data_dir)s/%(warc_file_base)s.log') ,
-                        ItemInterpolation('%(data_dir)s/%(warc_file_base)s.warc.gz')  ]
+        item['files'] = [
+            ItemInterpolation('%(data_dir)s/%(warc_file_base)s.log'),
+            ItemInterpolation('%(data_dir)s/%(warc_file_base)s.warc.gz')
+        ]
+
 
 def get_hash(filename):
     with open(filename, 'rb') as in_file:
@@ -227,7 +230,8 @@ class YgaArgs(object):
         if item_type == 'group':
             yga_args.append(item_value)
         elif item_type == 'group_cookie':
-            cookie_json = http_client.fetch('https://df58.host.cs.st-andrews.ac.uk/yahoogroups/cookieget/' + item_value + '/', method='GET')
+            cookie_json = http_client.fetch(
+                'https://df58.host.cs.st-andrews.ac.uk/yahoogroups/cookieget/' + item_value + '/', method='GET')
             if cookie_json.code != 200:
                 raise ValueError('Got bad status code {}.'.format(cookie_json.code))
 
@@ -243,6 +247,7 @@ class YgaArgs(object):
 
 class YgaDownload(ExternalProcess):
     '''Download with process runner.'''
+
     def __init__(self, args, max_tries=1, accept_on_exit_code=None,
                  retry_on_exit_code=None, env=None, stdin_data_function=None):
         ExternalProcess.__init__(
@@ -265,8 +270,6 @@ class YgaDownload(ExternalProcess):
         super(YgaDownload, self).process(item)
 
 
-
-
 ###########################################################################
 # Initialize the project.
 #
@@ -286,13 +289,18 @@ project = Project(
     '''.format(TRACKER_HOST, TRACKER_ID)
 )  # TODO
 
+p = argparse.ArgumentParser()
+pa = p.add_argument_group(title='Authentication Options')
+pa.add_argument('-ct', '--cookie_t', type=str,
+                help='T authentication cookie from yahoo.com')
+
 pipeline = Pipeline(
     CheckIP(),
     GetItemFromTracker('http://%s/%s' % (TRACKER_HOST, TRACKER_ID), downloader, VERSION),  # noqa: F821
     PrepareDirectories(warc_prefix='yg-api'),
     YgaDownload(
         YgaArgs(),
-        max_tries=0,              # 2,          #changed
+        max_tries=0,  # 2,          #changed
         accept_on_exit_code=[0],  # [0, 4, 8],  #changed
         env={
             'item_dir': ItemValue('item_dir'),
@@ -303,27 +311,27 @@ pipeline = Pipeline(
     ),
     MoveFiles(),
     PrepareStatsForTracker(
-        defaults={'downloader': downloader, 'version': VERSION},    # noqa: F821
+        defaults={'downloader': downloader, 'version': VERSION},  # noqa: F821
         file_groups={
             'data': [
-                ItemInterpolation('%(data_dir)s/%(warc_file_base)s.warc.gz')  #TODO ?
+                ItemInterpolation('%(data_dir)s/%(warc_file_base)s.warc.gz')  # TODO ?
             ]
         },
         id_function=stats_id_function,
     ),
     LimitConcurrent(NumberConfigValue(min=1, max=20, default='20',
                                       name='shared:rsync_threads', title='Rsync threads',
-                                     description='The maximum number of concurrent uploads.'),
+                                      description='The maximum number of concurrent uploads.'),
                     UploadWithTracker('http://%s/%s' % (TRACKER_HOST, TRACKER_ID),
-                                      downloader=downloader,        # noqa: F821
+                                      downloader=downloader,  # noqa: F821
                                       version=VERSION,
                                       files=ItemValue('files'),
                                       rsync_target_source_path=ItemInterpolation('%(data_dir)s/'),
                                       rsync_extra_args=[
-                                                         '--recursive',
-                                                         '--partial',
-                                                         '--partial-dir', '.rsync-tmp',
-                                                       ]),),
+                                          '--recursive',
+                                          '--partial',
+                                          '--partial-dir', '.rsync-tmp',
+                                      ]), ),
     SendDoneToTracker(
         tracker_url='http://%s/%s' % (TRACKER_HOST, TRACKER_ID),
         stats=ItemValue('stats')
