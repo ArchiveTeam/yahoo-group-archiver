@@ -3,7 +3,7 @@ use warnings;
 use strict;
 use autodie;
 
-my $cmd = "./yahoo.py -cf cookie.txt -f -i -d -l -p -a -m";
+my $cmd = "python yahoo.py -cf cookie.txt -f -i -d -l -p -a -m";
 
 while(my $group_name = <>) {
   chomp $group_name;
