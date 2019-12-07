@@ -31,6 +31,24 @@ pip install -r requirements.txt
 ./yahoo.py -ct '<T_cookie>' -cy '<Y_cookie>' '<groupid>'
 ```
 
+Alternatively, if you want to use conda (for example, on windows):
+
+- [install miniconda](https://docs.conda.io/en/latest/miniconda.html) (pick Python 3.7)
+- open the anaconda command prompt
+```bash
+conda create -n yga python=3.8 requests perl
+git clone https://github.com/ArchiveTeam/yahoo-group-archiver.git
+cd yahoo-group-archiver
+conda activate yga
+pip install -r requirements.txt
+python yahoo.py -ct "<T_cookie>" -cy "<Y_cookie>" -cf "cookie.txt" "<groupid>"
+```
+If you've generated a `cookies.txt` file and place a number of group id's in a file (for example, 'groupids.txt'), 
+you can run them automatically with the perl script:
+```bash
+perl processQ groupids.txt
+```
+
 You will need to get the `T` and `Y` cookie values from an authenticated
 browser session.
 
