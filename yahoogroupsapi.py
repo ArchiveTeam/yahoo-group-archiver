@@ -124,8 +124,13 @@ class YahooGroupsAPI:
         with self.http_context(self.ww):
             time.sleep(self.min_delay)
 
+            r = None
             for attempt in range(self.retries):
-                r = self.s.get(url, verify=VERIFY_HTTPS, **args)
+                try:
+                    r = self.s.get(url, verify=VERIFY_HTTPS, **args)
+                except:
+                   self.logger.error("ERROR getting url %s",url)
+                   continue
                 if r.status_code == 400 or r.status_code == 500:
                     if r.status_code == 400 and 'malware' in r.text:
                         self.logger.warning("Got 400 error indicating malware for %s, skipping", url)
@@ -151,6 +156,8 @@ class YahooGroupsAPI:
                 r.raise_for_status()
                 break
 
+            if r is None:
+                return None
             if f is None:
                 return r.content
             else:
