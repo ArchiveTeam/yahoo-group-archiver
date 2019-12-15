@@ -36,7 +36,7 @@ else:
 # WARC metadata params
 
 WARC_META_PARAMS = OrderedDict([('software', 'yahoo-group-archiver'),
-                                ('version','20191212.01'),
+                                ('version','20191214.00'),
                                 ('format', 'WARC File Format 1.0'),
                                 ('command-arguments', ' '.join(sys.argv))
                                 ])
@@ -129,7 +129,7 @@ def archive_message_content(yga, id, status="", skipHTML=False, skipRaw=False, n
                 logger.exception("HTML grab failed for message %d", id)
 
 
-def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=False, skipRaw=False, noAttachments=False):
+def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=False, skipRaw=False, noAttachments=False, skipMessages=None):
     logger = logging.getLogger('archive_email')
     try:
         # Grab messages for initial counts and permissions check
@@ -158,6 +158,9 @@ def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=Fals
         message_subset = archive_messages_metadata(yga)
         logger.info("Group has %s messages (maximum id: %s), fetching all",
                     len(message_subset), (message_subset or ['n/a'])[-1])
+
+    if skipMessages:
+        return
 
     n = 1
     for id in message_subset:
@@ -975,6 +978,8 @@ if __name__ == "__main__":
                     help='Only archive HTML email and attachments through the topics API')
     po.add_argument('-r', '--raw', action='store_true',
                     help='Only archive raw email without attachments through the messages API')
+    po.add_argument('-mt', '--meta', action='store_true',
+                    help='Only archive message previews through the messages API')
     po.add_argument('-d', '--database', action='store_true',
                     help='Only archive database')
     po.add_argument('-l', '--links', action='store_true',
@@ -1054,7 +1059,7 @@ if __name__ == "__main__":
 
     # Default to all unique content. This includes topics and raw email, 
     # but not the full email download since that would duplicate html emails we get through topics.
-    if not (args.email or args.files or args.photos or args.database or args.links or args.calendar or args.about or
+    if not (args.meta or args.email or args.files or args.photos or args.database or args.links or args.calendar or args.about or
             args.polls or args.attachments or args.members or args.topics or args.raw):
         args.files = args.photos = args.database = args.links = args.calendar = args.about = \
             args.polls = args.attachments = args.members = args.topics = args.raw = True
@@ -1091,6 +1096,9 @@ if __name__ == "__main__":
         if args.raw:
             with Mkchdir('email'):
                 archive_email(yga, message_subset=args.ids, start=args.start, stop=args.stop,skipHTML=True)
+        if args.meta:
+            with Mkchdir('email'):
+                archive_email(yga, skipMessages=True)
         if args.database:
             with Mkchdir('databases'):
                 archive_db(yga)
