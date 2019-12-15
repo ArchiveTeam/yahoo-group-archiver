@@ -64,11 +64,12 @@ if not PYTHON:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20191214.01'
+VERSION = '20191215.00'
 USER_AGENT = 'ArchiveTeam'
 TRACKER_ID = 'yahoo-groups-api'
 # TRACKER_HOST = 'tracker.archiveteam.org'  #prod-env
 TRACKER_HOST = 'tracker-test.ddns.net'  #dev-env
+TRACKER_HOST = 'localhost'  #dev-env
 
 
 ###########################################################################
@@ -226,8 +227,11 @@ class YgaArgs(object):
 
         if item_type == 'group':
             yga_args.append(item_value)
-        elif item_type == 'group_cookie':
-            cookie_json = http_client.fetch('https://df58.host.cs.st-andrews.ac.uk/yahoogroups/cookieget/' + item_value + '/', method='GET')
+        elif 'group_cookie' in item_type:
+            if item_type == 'group_cookie':
+              cookie_json = http_client.fetch('https://df58.host.cs.st-andrews.ac.uk/yahoogroups/cookieget/' + item_value + '/', method='GET')
+            else:
+              cookie_json = http_client.fetch('https://www.csua.berkeley.edu/~marked/AT/yga/cookie.json', method='GET')
             if cookie_json.code != 200:
                 raise ValueError('Got bad status code {}.'.format(cookie_json.code))
 
