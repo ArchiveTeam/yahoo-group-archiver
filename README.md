@@ -134,3 +134,8 @@ Message Range Options:
 Output Options:
   -w, --warc            Output WARC file of raw network requests. [Requires
                         warcio package installed]
+```
+
+## Next Steps
+
+This tool saves archives in a format that most end-users can't use. You can use [Yahoo Group Archive Tools](https://github.com/anirvan/yahoo-group-archive-tools) to turn this output into [`mbox`](https://en.wikipedia.org/wiki/Mbox) folders, [individual email files](https://en.wikipedia.org/wiki/Email#Message_format), and optionally, PDF files. (If you use third party post-processing tools, please retain the original downloads to prevent loss of data.)
