@@ -129,7 +129,7 @@ def archive_message_content(yga, id, status="", skipHTML=False, skipRaw=False, n
                 logger.exception("HTML grab failed for message %d", id)
 
 
-def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=False, skipRaw=False, noAttachments=False, skipMessages=None):
+def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=False, skipRaw=False, noAttachments=False, skipMessages=False):
     logger = logging.getLogger('archive_email')
     try:
         # Grab messages for initial counts and permissions check
