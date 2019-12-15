@@ -129,7 +129,7 @@ def archive_message_content(yga, id, status="", skipHTML=False, skipRaw=False, n
                 logger.exception("HTML grab failed for message %d", id)
 
 
-def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=False, skipRaw=False, noAttachments=False, skipMessages=False):
+def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=False, skipRaw=False, noAttachments=False):
     logger = logging.getLogger('archive_email')
     try:
         # Grab messages for initial counts and permissions check
@@ -158,9 +158,6 @@ def archive_email(yga, message_subset=None, start=None, stop=None, skipHTML=Fals
         message_subset = archive_messages_metadata(yga)
         logger.info("Group has %s messages (maximum id: %s), fetching all",
                     len(message_subset), (message_subset or ['n/a'])[-1])
-
-    if skipMessages:
-        return
 
     n = 1
     for id in message_subset:
@@ -1097,8 +1094,8 @@ if __name__ == "__main__":
             with Mkchdir('email'):
                 archive_email(yga, message_subset=args.ids, start=args.start, stop=args.stop,skipHTML=True)
         if args.meta:
-            with Mkchdir('email'):
-                archive_email(yga, skipMessages=True)
+            with Mkchdir('metadata'):
+                archive_messages_metadata(yga)
         if args.database:
             with Mkchdir('databases'):
                 archive_db(yga)
