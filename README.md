@@ -2,6 +2,15 @@ yahoo-group-archiver
 pipeline mode
 ====================
 
+```bash
+# In shell, deletes when you control+c
+docker run --rm -it -e DOWNLOADER=yournamehere -e CONCURRENT_ITEMS=4 wingysam/yahoo-group-archiver
+# In background, continues running after server reboot
+docker run -d --restart=always -e DOWNLOADER=yournamehere -e CONCURRENT_ITEMS=4 wingysam/yahoo-group-archiver
+```
+
+OR
+
 * Python 3.5 - 3.8  
 
 git clone https://github.com/ArchiveTeam/yahoo-group-archiver.git  
